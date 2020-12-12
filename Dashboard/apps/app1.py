@@ -96,50 +96,99 @@ layout = html.Div([
     ],
     style={'paddingBottom' : 20}),
 
-    html.Div([  # Holds the map, barchart & piechart (40:30:30 split) 
-        html.Div([
-            dcc.Graph(
-                id="payload_map",
+    html.Div([
+        html.Div([  # Holds the map, barchart & piechart (40:30:30 split) 
+            html.Div([
+                dcc.Graph(
+                    id="payload_map",
+                ),
+            ],
+            style={
+                "width" : '40%', 
+                'float' : 'left', 
+                'display' : 'inline-block', 
+                'paddingRight' : 5, 
+                'paddingLeft' : 50,
+                'boxSizing' : 'border-box'
+                }
             ),
-        ],
-        style={
-            "width" : '40%', 
-            'float' : 'left', 
-            'display' : 'inline-block', 
-            'paddingRight' : 5, 
-            'paddingLeft' : 50,
-            'boxSizing' : 'border-box'
-            }
-        ),
-        html.Div([
-            dcc.Graph(
-                id="monthly_payload_bar",
+            html.Div([
+                dcc.Graph(
+                    id="monthly_payload_bar",
+                ),
+            ],
+            style={
+                "width" : '30%', 
+                'float' : 'left', 
+                'display' : 'inline-block', 
+                'paddingRight' : 5, 
+                'paddingLeft' : 50,
+                'boxSizing' : 'border-box'
+                }
             ),
-        ],
-        style={
-            "width" : '30%', 
-            'float' : 'left', 
-            'display' : 'inline-block', 
-            'paddingRight' : 5, 
-            'paddingLeft' : 50,
-            'boxSizing' : 'border-box'
-            }
-        ),
-        html.Div([
-            dcc.Graph(
-                id="payload_type_pie",
-            )
-            #style={'height' : '50%'})
-        ],
-        style={
-            "width" : '30%', 
-            'float' : 'right', 
-            'display' : 'inline-block', 
-            'paddingRight' : 50, 
-            'paddingLeft' : 5,
-            'boxSizing' : 'border-box'
-            })
+            html.Div([
+                dcc.Graph(
+                    id="payload_type_pie",
+                ),
+                #style={'height' : '50%'})
+            ],
+            style={
+                "width" : '30%', 
+                'float' : 'right', 
+                'display' : 'inline-block', 
+                'paddingRight' : 50, 
+                'paddingLeft' : 5,
+                'paddingTop' : 10,
+                'boxSizing' : 'border-box'
+                }),
+        ]),
 
+        html.Div([  # Holds the map, barchart & piechart (40:30:30 split) 
+            html.Div([
+                dcc.Graph(
+                    id="payload_map_asorig",
+                ),
+            ],
+            style={
+                "width" : '40%', 
+                'float' : 'left', 
+                'display' : 'inline-block', 
+                'paddingRight' : 5, 
+                'paddingLeft' : 50,
+                'paddingTop' : 10,
+                'boxSizing' : 'border-box'
+                }
+            ),
+            html.Div([
+                dcc.Graph(
+                    id="monthly_payload_bar_asorig",
+                )
+            ],
+            style={
+                "width" : '30%', 
+                'float' : 'left', 
+                'display' : 'inline-block', 
+                'paddingRight' : 5, 
+                'paddingLeft' : 50,
+                'paddingTop' : 10,
+                'boxSizing' : 'border-box'
+                }
+            ),
+            html.Div([
+                dcc.Graph(
+                    id="payload_type_pie_asorig",
+                )
+                #style={'height' : '50%'})
+            ],
+            style={
+                "width" : '30%', 
+                'float' : 'right', 
+                'display' : 'inline-block', 
+                'paddingRight' : 50, 
+                'paddingLeft' : 5,
+                'boxSizing' : 'border-box'
+                }),
+        ]),
     ]),
     
     dcc.Link(
@@ -173,7 +222,7 @@ layout = html.Div([
                 }
             )
         ])
-])
+    ])
 
 
 
@@ -252,7 +301,7 @@ def create_payload_map(destination_airport):
                   'color' : 'rgb(250,250,250)'
               },
               'height' : 300,
-              'title' : 'test',
+              'title' : 'Payload flown to selected airport',
               'margin' : { # Set margins to allow maximum space for the chart
                   'b' : 25,
                   'l' : 30,
@@ -270,7 +319,6 @@ def create_payload_map(destination_airport):
     
     # Returns the figure into the 'figure' component property, update the bar chart
     return fig
-
 
 @app.callback(Output('payload_type_pie', 'figure'),
               [Input('dest_airport_dropdown', 'value')])
@@ -297,10 +345,127 @@ def create_piechart(destination_airport):
 
     return (piechart)
 
+@app.callback(Output('payload_map_asorig', 'figure'),
+              [Input('dest_airport_dropdown', 'value')])
+def create_payload_map(destination_airport):
+    dff = df[df['orig_airport']==destination_airport].groupby('dest_airport', as_index=False).agg({'payload':'sum','dest_lat':'first','dest_long':'first'}).sort_values('payload', ascending=False)
+    
+    trace = [{
+                'type' : 'scattermapbox',
+                'mode' : 'markers',
+                'customdata' : dff["payload"],
+                'lat' : dff["dest_lat"],
+                'lon' : dff["dest_long"],
+                'marker' : {
+                    'color' : dff["payload"],
+                    'size' : dff["payload"]/5000,
+                    },
+                'text' : dff["dest_airport"],
+                'hovertemplate':
+                "<b>%{text}</br></br></br>"+
+                "Payload: %{customdata} kg"
+                ,
+            }]
+            
+    layout = {
+        'height' : 300,
+        'paper_bgcolor' : 'rgb(0,0,0)',
+              'font' : {
+                  'color' : 'rgb(250,250,250'
+              }, # Set this to match the colour of the sea in the mapbox colourscheme
+        'autosize' : True,
+        'hovermode' : 'closest',
+        'mapbox' : {
+            'accesstoken' : mapbox_access_token,
+            'center' : {
+                'lat' : 0.7893,
+                'lon' : 113.9213
+            },
+            'zoom' : 3,
+            'style' : 'dark',   # Dark theme will make the colours stand out
+        },
+        'margin' : {'t' : 0,
+                   'b' : 0,
+                   'l' : 0,
+                   'r' : 0},
+        'legend' : {
+            'font' : {'color' : 'white'},
+             'orientation' : 'h',
+             'x' : 0,
+             'y' : 1.01
+        }
+    }
+    fig = dict(data=trace, layout=layout) 
+    return fig
+
+@app.callback(Output('monthly_payload_bar_asorig', 'figure'),
+              [Input('dest_airport_dropdown', 'value')])
+def create_payload_graph(destination_airport):
+    dff = df[df['orig_airport']==destination_airport].groupby('month_name', as_index=False, sort=False).sum()
+
+    trace = [{
+            'type' : 'scatter',
+            'y' : dff['payload'],
+            'x' : dff['month_name'],
+            'hoverinfo' : dff['payload'],
+            'marker' : {
+            'line' : {'width' : 2}},
+        }]
+    
+    fig = {'data' : trace,
+          'layout' : {
+              'paper_bgcolor' : 'rgb(0,0,0)',
+              'plot_bgcolor' : 'rgb(0,0,0)',
+              'font' : {
+                  'color' : 'rgb(250,250,250)'
+              },
+              'height' : 300,
+              'title' : 'Payload flown from selected airport',
+              'margin' : { # Set margins to allow maximum space for the chart
+                  'b' : 25,
+                  'l' : 30,
+                  't' : 70,
+                  'r' : 0
+              },
+              'legend' : { # Horizontal legens, positioned at the bottom to allow maximum space for the chart
+                  'orientation' : 'h',
+                  'x' : 0,
+                  'y' : 1.01,
+                  'yanchor' : 'bottom',
+                  },
+                }
+          }
+    
+    # Returns the figure into the 'figure' component property, update the bar chart
+    return fig
+
+@app.callback(Output('payload_type_pie_asorig', 'figure'),
+              [Input('dest_airport_dropdown', 'value')])
+def create_piechart(destination_airport):
+    dff = df[df['orig_airport']==destination_airport].groupby('commodity', as_index=False, sort=False).sum()
+
+    piechart=px.pie(dff,
+        values=dff.payload,
+        names=dff.commodity,
+        color_discrete_sequence=px.colors.sequential.Teal,
+    )
+
+    piechart.update_layout({
+        'plot_bgcolor': 'rgba(0, 0, 0, 0)',
+        'paper_bgcolor': 'rgba(0, 0, 0, 0)',
+        'font_color':'rgb(200,200,200)',
+        'font_size':11,
+        'height':300,
+        'margin':{'l':0}
+    })
+
+    piechart.update_traces(textposition='inside')
+
+
+    return (piechart)
 
 @app.callback(Output('machine_learning', 'figure'),
               [Input('dest_airport_dropdown', 'value')])
-
 def modellingAudi(origin_airport):
     
     #holiday dataset
@@ -355,6 +520,8 @@ def modellingAudi(origin_airport):
         paper_bgcolor='rgb(0,0,0)',
         plot_bgcolor='rgb(0,0,0)',
         font_color='rgb(250,250,250)',
+        title_text="Forecasting Result",
+        title_x=0.5
         )
 
     fig.update_xaxes(showgrid=False)
